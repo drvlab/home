@@ -174,12 +174,6 @@
 
   .logo-img.visible {
     opacity: 1;
-    transition: opacity 12s ease, filter 1.5s ease;
-  }
-
-  .logo-img.hiding {
-    opacity: 0;
-    transition: opacity 14s ease, filter 2s ease;
   }
 
   .logo-img.visible.distorting {
@@ -431,6 +425,8 @@
     clearTimeout(hideTimer);
     photoVisible = true;
     logoImg.classList.remove('hiding');
+    // Force reflow so transition fires
+    void logoImg.offsetWidth;
     logoImg.classList.add('visible');
     radarCanvas.classList.add('hidden');
   }
@@ -438,13 +434,13 @@
   function startHideTimer() {
     clearTimeout(hideTimer);
     hideTimer = setTimeout(() => {
-      // fade out photo slowly, bring back radar
       photoVisible = false;
-      logoImg.classList.add('hiding');
       logoImg.classList.remove('visible', 'distorting');
+      // Force reflow
+      void logoImg.offsetWidth;
+      logoImg.classList.add('hiding');
       radarCanvas.classList.remove('hidden');
       warpTarget = 0;
-      // clean up hiding class after transition
       setTimeout(() => logoImg.classList.remove('hiding'), 15000);
     }, 10000);
   }
