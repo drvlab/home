@@ -169,17 +169,15 @@
     z-index: 2;
     opacity: 0;
     filter: brightness(1.05) saturate(1.1);
-    transition: opacity 0.8s ease, filter 0.5s ease;
+    transition: opacity 2s ease, filter 1.2s ease;
   }
 
-  .logo-link:hover .logo-img {
+  .logo-img.visible {
     opacity: 1;
-    filter: brightness(1.15) saturate(1.25) url(#gravity);
   }
 
-  .logo-link:not(:hover) .logo-img {
-    opacity: 0;
-    filter: brightness(1.05) saturate(1.1);
+  .logo-img.visible.distorting {
+    filter: brightness(1.15) saturate(1.25) url(#gravity);
   }
 
   /* Radar canvas — always visible, fades out on hover */
@@ -191,11 +189,10 @@
     border-radius: 50%;
     z-index: 3;
     pointer-events: none;
-    opacity: 1;
-    transition: opacity 0.8s ease;
+    transition: opacity 2s ease;
   }
 
-  .logo-link:hover .radar-canvas {
+  .radar-canvas.hidden {
     opacity: 0;
   }
 
@@ -341,8 +338,6 @@
     ring.style.left = rx+'px'; ring.style.top = ry+'px';
     requestAnimationFrame(animRing);
   })();
-  logoLink.addEventListener('mouseenter', () => ring.classList.add('hover'));
-  logoLink.addEventListener('mouseleave', () => ring.classList.remove('hover'));
 
   // --- Radar sweep canvas ---
   const radarCanvas = document.getElementById('radarCanvas');
@@ -357,7 +352,7 @@
 
   let sweepAngle = -Math.PI / 2; // start at top
   let lastTs = null;
-  const SWEEP_PERIOD = 4000; // ms per rotation
+  const SWEEP_PERIOD = 3600; // ms per rotation — same as radar rings
 
   function drawSweep(ts) {
     if (!lastTs) lastTs = ts;
@@ -419,29 +414,60 @@
   }
   requestAnimationFrame(drawSweep);
 
-  // --- Gravitational distortion on hover ---
-  const turbulence = document.getElementById('turbulence');
+  // --- Photo show/hide + gravity distortion + 10s auto-hide ---
+  const turbulence   = document.getElementById('turbulence');
   const displacement = turbulence ? turbulence.nextElementSibling : null;
-  let warpRaf = null;
-  let warpScale = 0;
+  let warpScale  = 0;
   let warpTarget = 0;
+  let hideTimer  = null;
+  let photoVisible = false;
 
+  function showPhoto() {
+    photoVisible = true;
+    logoImg.classList.add('visible');
+    radarCanvas.classList.add('hidden');
+    resetHideTimer();
+  }
+
+  function hidePhoto() {
+    photoVisible = false;
+    logoImg.classList.remove('visible', 'distorting');
+    radarCanvas.classList.remove('hidden');
+    warpTarget = 0;
+  }
+
+  function resetHideTimer() {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(hidePhoto, 10000);
+  }
+
+  // Show on mouseenter, distort while hovering
+  logoLink.addEventListener('mouseenter', () => {
+    showPhoto();
+    warpTarget = 28;
+    logoImg.classList.add('distorting');
+    ring.classList.add('hover');
+  });
+
+  logoLink.addEventListener('mouseleave', () => {
+    warpTarget = 0;
+    logoImg.classList.remove('distorting');
+    ring.classList.remove('hover');
+    // photo stays visible, 10s timer continues
+  });
+
+  // Any mouse activity on the link resets the timer
+  logoLink.addEventListener('mousemove', resetHideTimer);
+
+  // Animate warp
   function animateWarp() {
     warpScale += (warpTarget - warpScale) * 0.07;
-    if (displacement) {
-      displacement.setAttribute('scale', warpScale.toFixed(2));
-    }
-    // also slowly drift baseFrequency for organic feel
+    if (displacement) displacement.setAttribute('scale', warpScale.toFixed(2));
     const bf = 0.015 + Math.sin(Date.now() * 0.0004) * 0.004;
-    if (turbulence) {
-      turbulence.setAttribute('baseFrequency', `${bf.toFixed(4)} ${(bf * 0.7).toFixed(4)}`);
-    }
-    warpRaf = requestAnimationFrame(animateWarp);
+    if (turbulence) turbulence.setAttribute('baseFrequency', `${bf.toFixed(4)} ${(bf * 0.7).toFixed(4)}`);
+    requestAnimationFrame(animateWarp);
   }
   animateWarp();
-
-  logoLink.addEventListener('mouseenter', () => { warpTarget = 28; });
-  logoLink.addEventListener('mouseleave', () => { warpTarget = 0; });
 
   // --- Click hint ---
   // Measure each char position in DRV and align LAB chars under them
