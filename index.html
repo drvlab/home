@@ -310,7 +310,7 @@
     <div class="radar-ring"></div>
     <canvas class="radar-canvas" id="radarCanvas"></canvas>
     <div class="logo-img-wrap" id="logoWrap">
-      <img class="logo-img" id="logoImg" src="DRVlogo1.png" alt="DRV Lab logo">
+      <img class="logo-img" id="logoImg" src="DRVlgo1_2.png" alt="DRV Lab logo">
     </div>
     <div class="logo-spin"></div>
   </a>
@@ -340,10 +340,15 @@
   const radarCanvas = document.getElementById('radarCanvas');
 
   function resizeRadar() {
-    const s = logoLink.offsetWidth;
-    radarCanvas.width  = s * (window.devicePixelRatio || 1);
-    radarCanvas.height = s * (window.devicePixelRatio || 1);
+    const rect = logoLink.getBoundingClientRect();
+    const s = Math.round(rect.width);
+    const dpr = window.devicePixelRatio || 1;
+    radarCanvas.width  = s * dpr;
+    radarCanvas.height = s * dpr;
+    radarCanvas.style.width  = s + 'px';
+    radarCanvas.style.height = s + 'px';
   }
+  window.addEventListener('load', resizeRadar);
   resizeRadar();
   window.addEventListener('resize', resizeRadar);
 
