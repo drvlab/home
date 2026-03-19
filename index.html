@@ -371,19 +371,22 @@
     ctx.arc(cx, cy, r, 0, Math.PI * 2);
     ctx.clip();
 
-    // Trailing sweep arc (60°)
-    const trailRad = (60 / 180) * Math.PI;
-    ctx.beginPath();
-    ctx.moveTo(cx, cy);
-    ctx.arc(cx, cy, r, sweepAngle - trailRad, sweepAngle);
-    ctx.closePath();
-    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
-    grd.addColorStop(0, 'rgba(120,40,220,0.0)');
-    grd.addColorStop(1, 'rgba(160,60,255,0.20)');
-    ctx.fillStyle = grd;
-    ctx.fill();
+    // Stepped trail: 6 steps of 10° each, progressively more transparent going back
+    const stepRad = (10 / 180) * Math.PI;
+    const steps = 6;
+    for (let i = steps; i >= 1; i--) {
+      const a1 = sweepAngle - i * stepRad;
+      const a2 = sweepAngle - (i - 1) * stepRad;
+      const alpha = (1 - i / (steps + 1)) * 0.16;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, a1, a2);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(160,60,255,${alpha.toFixed(3)})`;
+      ctx.fill();
+    }
 
-    // Bright trailing edge (last 12°)
+    // Bright trailing wedge (last 12°)
     const brightRad = (12 / 180) * Math.PI;
     ctx.beginPath();
     ctx.moveTo(cx, cy);
@@ -391,11 +394,11 @@
     ctx.closePath();
     const grd2 = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
     grd2.addColorStop(0, 'rgba(180,80,255,0.0)');
-    grd2.addColorStop(1, 'rgba(200,120,255,0.35)');
+    grd2.addColorStop(1, 'rgba(200,120,255,0.28)');
     ctx.fillStyle = grd2;
     ctx.fill();
 
-    // Sweep line
+    // Sweep line — from center to edge
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(cx + Math.cos(sweepAngle) * r, cy + Math.sin(sweepAngle) * r);
