@@ -169,18 +169,23 @@
     z-index: 2;
     opacity: 0;
     filter: brightness(1.05) saturate(1.1);
-    transition: opacity 2s ease, filter 1.2s ease;
+    transition: opacity 4s ease, filter 1.5s ease;
   }
 
   .logo-img.visible {
     opacity: 1;
+    transition: opacity 4s ease, filter 1.5s ease;
+  }
+
+  .logo-img.hiding {
+    opacity: 0;
+    transition: opacity 4s ease, filter 2s ease;
   }
 
   .logo-img.visible.distorting {
     filter: brightness(1.15) saturate(1.25) url(#gravity);
   }
 
-  /* Radar canvas — always visible, fades out on hover */
   .radar-canvas {
     position: absolute;
     inset: 0;
@@ -189,7 +194,7 @@
     border-radius: 50%;
     z-index: 3;
     pointer-events: none;
-    transition: opacity 2s ease;
+    transition: opacity 4s ease;
   }
 
   .radar-canvas.hidden {
@@ -352,7 +357,7 @@
 
   let sweepAngle = -Math.PI / 2; // start at top
   let lastTs = null;
-  const SWEEP_PERIOD = 3600; // ms per rotation — same as radar rings
+  const SWEEP_PERIOD = 9000; // ms per rotation — slow
 
   function drawSweep(ts) {
     if (!lastTs) lastTs = ts;
@@ -417,31 +422,33 @@
   // --- Photo show/hide + gravity distortion + 10s auto-hide ---
   const turbulence   = document.getElementById('turbulence');
   const displacement = turbulence ? turbulence.nextElementSibling : null;
-  let warpScale  = 0;
-  let warpTarget = 0;
-  let hideTimer  = null;
+  let warpScale    = 0;
+  let warpTarget   = 0;
+  let hideTimer    = null;
   let photoVisible = false;
 
   function showPhoto() {
+    clearTimeout(hideTimer);
     photoVisible = true;
+    logoImg.classList.remove('hiding');
     logoImg.classList.add('visible');
     radarCanvas.classList.add('hidden');
-    resetHideTimer();
   }
 
-  function hidePhoto() {
-    photoVisible = false;
-    logoImg.classList.remove('visible', 'distorting');
-    radarCanvas.classList.remove('hidden');
-    warpTarget = 0;
-  }
-
-  function resetHideTimer() {
+  function startHideTimer() {
     clearTimeout(hideTimer);
-    hideTimer = setTimeout(hidePhoto, 10000);
+    hideTimer = setTimeout(() => {
+      // fade out photo slowly, bring back radar
+      photoVisible = false;
+      logoImg.classList.add('hiding');
+      logoImg.classList.remove('visible', 'distorting');
+      radarCanvas.classList.remove('hidden');
+      warpTarget = 0;
+      // clean up hiding class after transition
+      setTimeout(() => logoImg.classList.remove('hiding'), 4500);
+    }, 10000);
   }
 
-  // Show on mouseenter, distort while hovering
   logoLink.addEventListener('mouseenter', () => {
     showPhoto();
     warpTarget = 28;
@@ -453,11 +460,15 @@
     warpTarget = 0;
     logoImg.classList.remove('distorting');
     ring.classList.remove('hover');
-    // photo stays visible, 10s timer continues
+    if (photoVisible) startHideTimer();
   });
 
-  // Any mouse activity on the link resets the timer
-  logoLink.addEventListener('mousemove', resetHideTimer);
+  logoLink.addEventListener('mousemove', () => {
+    if (photoVisible) {
+      clearTimeout(hideTimer);
+      startHideTimer();
+    }
+  });
 
   // Animate warp
   function animateWarp() {
