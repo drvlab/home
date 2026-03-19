@@ -84,10 +84,31 @@
     margin-bottom: 3.5rem;
     opacity: 0;
     animation: fadeUp 1.2s ease 0.3s forwards;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
   }
 
-  #titleCanvas {
+  .label-drv {
+    font-family: 'Syncopate', sans-serif;
+    font-weight: 700;
+    font-size: clamp(12px, 1.6vw, 18px);
+    color: rgba(255,255,255,0.92);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
     display: block;
+    line-height: 1.1;
+  }
+
+  .label-lab {
+    font-family: 'Syncopate', sans-serif;
+    font-weight: 400;
+    font-size: clamp(12px, 1.6vw, 18px);
+    color: rgba(255,255,255,0.38);
+    text-transform: uppercase;
+    letter-spacing: 0.12em;
+    display: block;
+    line-height: 1.1;
   }
 
   /* Logo wrapper */
@@ -266,6 +287,9 @@
   </defs>
 </svg>
 
+<div style="position:absolute;opacity:0;pointer-events:none;font-family:'Syncopate';font-weight:700;">DRV</div>
+<div style="position:absolute;opacity:0;pointer-events:none;font-family:'Syncopate';font-weight:400;">LAB</div>
+
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
 <div class="bg-glow"></div>
@@ -273,7 +297,8 @@
 
 <div class="container">
   <div class="label-name">
-    <canvas id="titleCanvas"></canvas>
+    <span class="label-drv">DRV</span>
+    <span class="label-lab">LAB</span>
   </div>
 
   <a class="logo-link" href="#" id="logoLink" title="Releases — coming soon">
@@ -306,70 +331,6 @@
   })();
   logoLink.addEventListener('mouseenter', () => ring.classList.add('hover'));
   logoLink.addEventListener('mouseleave', () => ring.classList.remove('hover'));
-
-  // --- Draw DRV / LAB title on canvas ---
-  function drawTitle() {
-    const canvas = document.getElementById('titleCanvas');
-    const dpr = window.devicePixelRatio || 1;
-    const vw = window.innerWidth;
-    const fontSize = Math.max(28, Math.min(vw * 0.06, 64));
-    const gap = fontSize * 0.08;
-
-    const ctx = canvas.getContext('2d');
-
-    // Measure each DRV char position (bold)
-    ctx.font = `700 ${fontSize}px Syncopate, sans-serif`;
-    const drvChars = ['D','R','V'];
-    const drvPositions = []; // {x, w} for each char
-    let x = 0;
-    for (let i = 0; i < drvChars.length; i++) {
-      const w = ctx.measureText(drvChars[i]).width;
-      drvPositions.push({ x, w });
-      // inter-char spacing: measure 'DR' - 'D' to get advance
-      if (i < drvChars.length - 1) {
-        const pair = ctx.measureText(drvChars.slice(0, i+2).join('')).width;
-        const prev = ctx.measureText(drvChars.slice(0, i+1).join('')).width;
-        x += pair - prev;
-      }
-    }
-    const totalW = ctx.measureText('DRV').width;
-
-    // Measure each LAB char (regular)
-    ctx.font = `400 ${fontSize}px Syncopate, sans-serif`;
-    const labChars = ['L','A','B'];
-    const labWidths = labChars.map(c => ctx.measureText(c).width);
-
-    // Canvas size
-    const W = totalW;
-    const H = fontSize * 2 + gap;
-    canvas.width  = Math.ceil(W * dpr);
-    canvas.height = Math.ceil(H * dpr);
-    canvas.style.width  = W + 'px';
-    canvas.style.height = H + 'px';
-    ctx.scale(dpr, dpr);
-    ctx.clearRect(0, 0, W, H);
-
-    // Draw DRV bold
-    ctx.font = `700 ${fontSize}px Syncopate, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.92)';
-    ctx.textBaseline = 'top';
-    ctx.fillText('DRV', 0, 0);
-
-    // Draw each LAB char centered under corresponding DRV char
-    ctx.font = `400 ${fontSize}px Syncopate, sans-serif`;
-    ctx.fillStyle = 'rgba(255,255,255,0.42)';
-    for (let i = 0; i < labChars.length; i++) {
-      const drvCenter = drvPositions[i].x + drvPositions[i].w / 2;
-      const labX = drvCenter - labWidths[i] / 2;
-      ctx.fillText(labChars[i], labX, fontSize + gap);
-    }
-  }
-
-  document.fonts.ready.then(() => {
-    // Small delay to ensure Syncopate is fully rasterized
-    setTimeout(drawTitle, 100);
-  });
-  window.addEventListener('resize', drawTitle);
 
   // --- Gravitational distortion on hover ---
   const turbulence = document.getElementById('turbulence');
