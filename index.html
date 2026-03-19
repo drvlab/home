@@ -169,14 +169,9 @@
     z-index: 2;
     opacity: 0;
     filter: brightness(1.05) saturate(1.1);
-    transition: opacity 12s ease, filter 1.5s ease;
   }
 
-  .logo-img.visible {
-    opacity: 1;
-  }
-
-  .logo-img.visible.distorting {
+  .logo-img.distorting {
     filter: brightness(1.15) saturate(1.25) url(#gravity);
   }
 
@@ -188,11 +183,6 @@
     border-radius: 50%;
     z-index: 3;
     pointer-events: none;
-    transition: opacity 12s ease;
-  }
-
-  .radar-canvas.hidden {
-    opacity: 0;
   }
 
   /* Slow spin ambient overlay on logo */
@@ -424,24 +414,22 @@
   function showPhoto() {
     clearTimeout(hideTimer);
     photoVisible = true;
-    logoImg.classList.remove('hiding');
-    // Force reflow so transition fires
-    void logoImg.offsetWidth;
-    logoImg.classList.add('visible');
-    radarCanvas.classList.add('hidden');
+    logoImg.style.transition = 'opacity 12s ease, filter 1.5s ease';
+    logoImg.style.opacity = '1';
+    radarCanvas.style.transition = 'opacity 12s ease';
+    radarCanvas.style.opacity = '0';
   }
 
   function startHideTimer() {
     clearTimeout(hideTimer);
     hideTimer = setTimeout(() => {
       photoVisible = false;
-      logoImg.classList.remove('visible', 'distorting');
-      // Force reflow
-      void logoImg.offsetWidth;
-      logoImg.classList.add('hiding');
-      radarCanvas.classList.remove('hidden');
       warpTarget = 0;
-      setTimeout(() => logoImg.classList.remove('hiding'), 15000);
+      logoImg.classList.remove('distorting');
+      logoImg.style.transition = 'opacity 14s ease, filter 2s ease';
+      logoImg.style.opacity = '0';
+      radarCanvas.style.transition = 'opacity 14s ease';
+      radarCanvas.style.opacity = '1';
     }, 10000);
   }
 
