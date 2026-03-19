@@ -10,7 +10,7 @@
 
   html, body {
     height: 100%;
-    background: #000;
+    background: #07041a;
     overflow: hidden;
     cursor: none;
   }
@@ -62,7 +62,7 @@
   .bg-glow {
     position: fixed;
     inset: 0;
-    background: radial-gradient(ellipse at 50% 50%, rgba(100,20,180,0.12) 0%, transparent 70%);
+    background: radial-gradient(ellipse at 50% 50%, rgba(120,40,220,0.22) 0%, rgba(30,10,80,0.18) 50%, transparent 75%);
     pointer-events: none;
     z-index: 0;
   }
@@ -103,6 +103,7 @@
     opacity: 0;
     animation: fadeIn 1.4s ease 0.6s forwards;
     transition: transform 0.6s cubic-bezier(0.16,1,0.3,1);
+    overflow: visible;
   }
 
   .logo-link:hover {
@@ -144,8 +145,10 @@
     height: 100%;
     border-radius: 50%;
     display: block;
+    position: relative;
+    z-index: 2;
     filter: brightness(1.05) saturate(1.1);
-    transition: filter 0.5s ease;
+    transition: filter 0.5s ease, transform 0.15s ease;
   }
 
   .logo-link:hover .logo-img {
@@ -160,13 +163,25 @@
     background: conic-gradient(from 0deg, transparent 70%, rgba(180,80,255,0.06) 100%);
     animation: spinSlow 20s linear infinite;
     pointer-events: none;
+    z-index: 3;
   }
 
-  /* Radar rings */
+  /* Radar sweep — canvas handles this, but we keep the overlay clip */
+  .radar-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    z-index: 4;
+    pointer-events: none;
+  }
+
+  /* Radar rings — expand outward only */
   .radar-ring {
     position: absolute;
     border-radius: 50%;
-    border: 1px solid rgba(180,80,255,0.6);
+    border: 1px solid rgba(160,80,255,0.55);
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%) scale(1);
@@ -174,14 +189,15 @@
     height: 100%;
     opacity: 0;
     pointer-events: none;
+    z-index: 1;
     animation: radarPulse 3.6s ease-out infinite;
   }
-  .radar-ring:nth-child(2) { animation-delay: 1.2s; }
-  .radar-ring:nth-child(3) { animation-delay: 2.4s; }
+  .radar-ring:nth-child(3) { animation-delay: 1.2s; }
+  .radar-ring:nth-child(4) { animation-delay: 2.4s; }
 
   @keyframes radarPulse {
-    0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.7; }
-    100% { transform: translate(-50%,-50%) scale(2.8); opacity: 0; }
+    0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.65; }
+    100% { transform: translate(-50%,-50%) scale(2.9); opacity: 0; }
   }
 
   /* Releases hint */
@@ -248,7 +264,8 @@
   <span class="label-name">DRV Lab</span>
 
   <a class="logo-link" href="#" id="logoLink" title="Releases — coming soon">
-    <img class="logo-img" src="DRVlogo1.png" alt="DRV Lab logo">
+    <img class="logo-img" id="logoImg" src="DRVlogo1.png" alt="DRV Lab logo">
+    <canvas class="radar-canvas" id="radarCanvas"></canvas>
     <div class="logo-spin"></div>
     <div class="radar-ring"></div>
     <div class="radar-ring"></div>
@@ -259,42 +276,146 @@
 </div>
 
 <script>
+  // --- Cursor ---
   const cursor = document.getElementById('cursor');
-  const ring = document.getElementById('cursorRing');
+  const ring   = document.getElementById('cursorRing');
   const logoLink = document.getElementById('logoLink');
+  const logoImg  = document.getElementById('logoImg');
 
-  let mx = 0, my = 0;
-  let rx = 0, ry = 0;
-
+  let mx = 0, my = 0, rx = 0, ry = 0;
   document.addEventListener('mousemove', e => {
-    mx = e.clientX;
-    my = e.clientY;
-    cursor.style.transform = `translate(${mx - 4}px, ${my - 4}px)`;
+    mx = e.clientX; my = e.clientY;
+    cursor.style.transform = `translate(${mx-4}px,${my-4}px)`;
   });
-
-  function animRing() {
-    rx += (mx - rx) * 0.1;
-    ry += (my - ry) * 0.1;
-    ring.style.left = rx + 'px';
-    ring.style.top  = ry + 'px';
+  (function animRing() {
+    rx += (mx-rx)*0.1; ry += (my-ry)*0.1;
+    ring.style.left = rx+'px'; ring.style.top = ry+'px';
     requestAnimationFrame(animRing);
-  }
-  animRing();
-
+  })();
   logoLink.addEventListener('mouseenter', () => ring.classList.add('hover'));
   logoLink.addEventListener('mouseleave', () => ring.classList.remove('hover'));
 
-  // Click — placeholder until releases page exists
+  // --- Click hint ---
   logoLink.addEventListener('click', e => {
     e.preventDefault();
     const hint = document.getElementById('hint');
     hint.style.color = 'rgba(180,80,255,0.8)';
     hint.textContent = 'coming soon';
-    setTimeout(() => {
-      hint.style.color = '';
-      hint.textContent = 'releases';
-    }, 2000);
+    setTimeout(() => { hint.style.color=''; hint.textContent='releases'; }, 2000);
   });
+
+  // --- Radar sweep canvas ---
+  const canvas = document.getElementById('radarCanvas');
+
+  function resizeCanvas() {
+    const s = logoLink.offsetWidth;
+    canvas.width  = s;
+    canvas.height = s;
+  }
+  resizeCanvas();
+  window.addEventListener('resize', resizeCanvas);
+
+  let angle = 0; // radians, starts top, goes clockwise
+  const SWEEP_DEG = 60; // trailing arc in degrees
+  const PERIOD = 5000;  // ms per full rotation
+  let lastTime = null;
+  let lastPulseAngle = null; // track when to pulse image
+
+  function drawRadar(ts) {
+    if (!lastTime) lastTime = ts;
+    const dt = ts - lastTime;
+    lastTime = ts;
+
+    const s = canvas.width;
+    const cx = s / 2, cy = s / 2, r = s / 2;
+    const ctx = canvas.getContext('2d');
+    ctx.clearRect(0, 0, s, s);
+
+    // Clip to circle
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Advance angle clockwise (0 = top)
+    const step = (dt / PERIOD) * Math.PI * 2;
+    angle = (angle + step) % (Math.PI * 2);
+
+    // Convert: canvas 0 = right, we want 0 = top → subtract π/2
+    const a = angle - Math.PI / 2;
+
+    // Trailing sweep gradient (conic-like via arc fill)
+    const sweepRad = (SWEEP_DEG / 180) * Math.PI;
+    const grad = ctx.createConicalGradient
+      ? null // not standard — use manual approach
+      : null;
+
+    // Draw trailing arc as filled wedge
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, a - sweepRad, a, false);
+    ctx.closePath();
+    // Gradient: dark at trailing edge, brighter near line
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grd.addColorStop(0, 'rgba(140,50,255,0.0)');
+    grd.addColorStop(1, 'rgba(140,50,255,0.18)');
+    ctx.fillStyle = grd;
+    // Fade along sweep angle using globalAlpha trick — layer two passes
+    ctx.globalAlpha = 1;
+    ctx.fill();
+
+    // Brighter wedge near the line (last 15°)
+    const smallSweep = (15 / 180) * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, a - smallSweep, a, false);
+    ctx.closePath();
+    const grd2 = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grd2.addColorStop(0, 'rgba(180,80,255,0.0)');
+    grd2.addColorStop(1, 'rgba(180,80,255,0.22)');
+    ctx.fillStyle = grd2;
+    ctx.fill();
+
+    // The sweep line
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    ctx.strokeStyle = 'rgba(200,120,255,0.85)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = 'rgba(200,100,255,0.9)';
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    // Inner ring highlight (subtle circle at r)
+    ctx.beginPath();
+    ctx.arc(cx, cy, r - 1, 0, Math.PI * 2);
+    ctx.strokeStyle = 'rgba(180,80,255,0.15)';
+    ctx.lineWidth = 1;
+    ctx.stroke();
+
+    ctx.restore();
+
+    // Pulse image when line crosses top (angle ≈ 0 mod 2π)
+    const normalized = angle % (Math.PI * 2);
+    if (normalized < 0.12 && (lastPulseAngle === null || lastPulseAngle > 0.12)) {
+      pulseImage();
+    }
+    lastPulseAngle = normalized;
+
+    requestAnimationFrame(drawRadar);
+  }
+  requestAnimationFrame(drawRadar);
+
+  function pulseImage() {
+    logoImg.style.transition = 'transform 0.12s ease, filter 0.12s ease';
+    logoImg.style.transform  = 'scale(1.025)';
+    logoImg.style.filter     = 'brightness(1.25) saturate(1.4)';
+    setTimeout(() => {
+      logoImg.style.transform = 'scale(1)';
+      logoImg.style.filter    = 'brightness(1.05) saturate(1.1)';
+    }, 180);
+  }
 </script>
 </body>
 </html>
