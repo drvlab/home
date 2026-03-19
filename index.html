@@ -164,28 +164,39 @@
     height: 100%;
     border-radius: 50%;
     display: block;
-    position: relative;
+    position: absolute;
+    inset: 0;
     z-index: 2;
+    opacity: 0;
     filter: brightness(1.05) saturate(1.1);
-    transition: filter 0.5s ease;
-  }
-
-  .logo-img.distort {
-    animation: gravityWarp 0.6s ease-in-out forwards;
-  }
-
-  @keyframes gravityWarp {
-    0%   { filter: brightness(1.05) saturate(1.1) url(#gravity); }
-    100% { filter: brightness(1.15) saturate(1.25) url(#gravity); }
+    transition: opacity 0.8s ease, filter 0.5s ease;
   }
 
   .logo-link:hover .logo-img {
+    opacity: 1;
     filter: brightness(1.15) saturate(1.25) url(#gravity);
   }
 
   .logo-link:not(:hover) .logo-img {
+    opacity: 0;
     filter: brightness(1.05) saturate(1.1);
-    transition: filter 0.8s ease;
+  }
+
+  /* Radar canvas — always visible, fades out on hover */
+  .radar-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    z-index: 3;
+    pointer-events: none;
+    opacity: 1;
+    transition: opacity 0.8s ease;
+  }
+
+  .logo-link:hover .radar-canvas {
+    opacity: 0;
   }
 
   /* Slow spin ambient overlay on logo */
@@ -196,10 +207,10 @@
     background: conic-gradient(from 0deg, transparent 70%, rgba(180,80,255,0.06) 100%);
     animation: spinSlow 20s linear infinite;
     pointer-events: none;
-    z-index: 3;
+    z-index: 4;
   }
 
-  /* Radar rings — expand outward */
+  /* Radar rings — expand outward, always visible */
   .radar-ring {
     position: absolute;
     border-radius: 50%;
@@ -214,8 +225,8 @@
     z-index: 1;
     animation: radarPulse 3.6s ease-out infinite;
   }
-  .radar-ring:nth-child(2) { animation-delay: 1.2s; }
-  .radar-ring:nth-child(3) { animation-delay: 2.4s; }
+  .radar-ring:nth-child(3) { animation-delay: 1.2s; }
+  .radar-ring:nth-child(4) { animation-delay: 2.4s; }
 
   @keyframes radarPulse {
     0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.65; }
@@ -302,11 +313,12 @@
   </div>
 
   <a class="logo-link" href="#" id="logoLink" title="Releases — coming soon">
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <canvas class="radar-canvas" id="radarCanvas"></canvas>
     <img class="logo-img" id="logoImg" src="DRVlogo1.png" alt="DRV Lab logo">
     <div class="logo-spin"></div>
-    <div class="radar-ring"></div>
-    <div class="radar-ring"></div>
-    <div class="radar-ring"></div>
   </a>
 
   <span class="releases-hint" id="hint">releases</span>
@@ -331,6 +343,81 @@
   })();
   logoLink.addEventListener('mouseenter', () => ring.classList.add('hover'));
   logoLink.addEventListener('mouseleave', () => ring.classList.remove('hover'));
+
+  // --- Radar sweep canvas ---
+  const radarCanvas = document.getElementById('radarCanvas');
+
+  function resizeRadar() {
+    const s = logoLink.offsetWidth;
+    radarCanvas.width  = s * (window.devicePixelRatio || 1);
+    radarCanvas.height = s * (window.devicePixelRatio || 1);
+  }
+  resizeRadar();
+  window.addEventListener('resize', resizeRadar);
+
+  let sweepAngle = -Math.PI / 2; // start at top
+  let lastTs = null;
+  const SWEEP_PERIOD = 4000; // ms per rotation
+
+  function drawSweep(ts) {
+    if (!lastTs) lastTs = ts;
+    const dt = ts - lastTs;
+    lastTs = ts;
+
+    sweepAngle += (dt / SWEEP_PERIOD) * Math.PI * 2;
+
+    const dpr = window.devicePixelRatio || 1;
+    const s = radarCanvas.width / dpr;
+    const cx = s / 2, cy = s / 2, r = s / 2 - 1;
+    const ctx = radarCanvas.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, s, s);
+
+    // Clip to circle
+    ctx.save();
+    ctx.beginPath();
+    ctx.arc(cx, cy, r, 0, Math.PI * 2);
+    ctx.clip();
+
+    // Trailing sweep arc (60°)
+    const trailRad = (60 / 180) * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, sweepAngle - trailRad, sweepAngle);
+    ctx.closePath();
+    const grd = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grd.addColorStop(0, 'rgba(120,40,220,0.0)');
+    grd.addColorStop(1, 'rgba(160,60,255,0.20)');
+    ctx.fillStyle = grd;
+    ctx.fill();
+
+    // Bright trailing edge (last 12°)
+    const brightRad = (12 / 180) * Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.arc(cx, cy, r, sweepAngle - brightRad, sweepAngle);
+    ctx.closePath();
+    const grd2 = ctx.createRadialGradient(cx, cy, 0, cx, cy, r);
+    grd2.addColorStop(0, 'rgba(180,80,255,0.0)');
+    grd2.addColorStop(1, 'rgba(200,120,255,0.35)');
+    ctx.fillStyle = grd2;
+    ctx.fill();
+
+    // Sweep line
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(sweepAngle) * r, cy + Math.sin(sweepAngle) * r);
+    ctx.strokeStyle = 'rgba(210,130,255,0.9)';
+    ctx.lineWidth = 1.5;
+    ctx.shadowColor = 'rgba(200,100,255,0.8)';
+    ctx.shadowBlur = 6;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    ctx.restore();
+    requestAnimationFrame(drawSweep);
+  }
+  requestAnimationFrame(drawSweep);
 
   // --- Gravitational distortion on hover ---
   const turbulence = document.getElementById('turbulence');
