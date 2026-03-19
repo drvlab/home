@@ -162,6 +162,28 @@
     pointer-events: none;
   }
 
+  /* Radar rings */
+  .radar-ring {
+    position: absolute;
+    border-radius: 50%;
+    border: 1px solid rgba(180,80,255,0.6);
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%) scale(1);
+    width: 100%;
+    height: 100%;
+    opacity: 0;
+    pointer-events: none;
+    animation: radarPulse 3.6s ease-out infinite;
+  }
+  .radar-ring:nth-child(2) { animation-delay: 1.2s; }
+  .radar-ring:nth-child(3) { animation-delay: 2.4s; }
+
+  @keyframes radarPulse {
+    0%   { transform: translate(-50%,-50%) scale(1);   opacity: 0.7; }
+    100% { transform: translate(-50%,-50%) scale(2.8); opacity: 0; }
+  }
+
   /* Releases hint */
   .releases-hint {
     font-family: 'Space Mono', monospace;
@@ -228,6 +250,9 @@
   <a class="logo-link" href="#" id="logoLink" title="Releases — coming soon">
     <img class="logo-img" src="DRVlogo1.png" alt="DRV Lab logo">
     <div class="logo-spin"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
+    <div class="radar-ring"></div>
   </a>
 
   <span class="releases-hint" id="hint">releases</span>
