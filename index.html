@@ -81,15 +81,34 @@
 
   /* Label name — top */
   .label-name {
-    font-family: 'Syncopate', sans-serif;
-    font-weight: 700;
-    font-size: clamp(11px, 1.8vw, 18px);
-    letter-spacing: 0.55em;
-    color: rgba(255,255,255,0.55);
-    text-transform: uppercase;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
     margin-bottom: 3.5rem;
     opacity: 0;
     animation: fadeUp 1.2s ease 0.3s forwards;
+    line-height: 1;
+    gap: 0.3em;
+  }
+
+  .label-drv {
+    font-family: 'Syncopate', sans-serif;
+    font-weight: 700;
+    font-size: clamp(14px, 2.2vw, 22px);
+    letter-spacing: 0.45em;
+    color: rgba(255,255,255,0.9);
+    text-transform: uppercase;
+    display: block;
+  }
+
+  .label-lab {
+    font-family: 'Syncopate', sans-serif;
+    font-weight: 400;
+    font-size: clamp(14px, 2.2vw, 22px);
+    letter-spacing: 0.45em;
+    color: rgba(255,255,255,0.4);
+    text-transform: uppercase;
+    display: block;
   }
 
   /* Logo wrapper */
@@ -151,8 +170,22 @@
     transition: filter 0.5s ease;
   }
 
+  .logo-img.distort {
+    animation: gravityWarp 0.6s ease-in-out forwards;
+  }
+
+  @keyframes gravityWarp {
+    0%   { filter: brightness(1.05) saturate(1.1) url(#gravity); }
+    100% { filter: brightness(1.15) saturate(1.25) url(#gravity); }
+  }
+
   .logo-link:hover .logo-img {
-    filter: brightness(1.15) saturate(1.25);
+    filter: brightness(1.15) saturate(1.25) url(#gravity);
+  }
+
+  .logo-link:not(:hover) .logo-img {
+    filter: brightness(1.05) saturate(1.1);
+    transition: filter 0.8s ease;
   }
 
   /* Slow spin ambient overlay on logo */
@@ -244,13 +277,26 @@
 </head>
 <body>
 
+<svg width="0" height="0" style="position:absolute">
+  <defs>
+    <filter id="gravity" x="-20%" y="-20%" width="140%" height="140%" color-interpolation-filters="sRGB">
+      <feTurbulence id="turbulence" type="turbulence" baseFrequency="0.015 0.015" numOctaves="3" seed="2" result="noise"/>
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="0" xChannelSelector="R" yChannelSelector="G" result="displaced"/>
+      <feComposite in="displaced" in2="SourceGraphic" operator="in"/>
+    </filter>
+  </defs>
+</svg>
+
 <div class="cursor" id="cursor"></div>
 <div class="cursor-ring" id="cursorRing"></div>
 <div class="bg-glow"></div>
 <div class="scanlines"></div>
 
 <div class="container">
-  <span class="label-name">DRV Lab</span>
+  <div class="label-name">
+    <span class="label-drv" id="labelDrv">DRV</span>
+    <span class="label-lab" id="labelLab">LAB</span>
+  </div>
 
   <a class="logo-link" href="#" id="logoLink" title="Releases — coming soon">
     <img class="logo-img" id="logoImg" src="DRVlogo1.png" alt="DRV Lab logo">
@@ -283,7 +329,69 @@
   logoLink.addEventListener('mouseenter', () => ring.classList.add('hover'));
   logoLink.addEventListener('mouseleave', () => ring.classList.remove('hover'));
 
+  // --- Gravitational distortion on hover ---
+  const turbulence = document.getElementById('turbulence');
+  const displacement = turbulence ? turbulence.nextElementSibling : null;
+  let warpRaf = null;
+  let warpScale = 0;
+  let warpTarget = 0;
+
+  function animateWarp() {
+    warpScale += (warpTarget - warpScale) * 0.07;
+    if (displacement) {
+      displacement.setAttribute('scale', warpScale.toFixed(2));
+    }
+    // also slowly drift baseFrequency for organic feel
+    const bf = 0.015 + Math.sin(Date.now() * 0.0004) * 0.004;
+    if (turbulence) {
+      turbulence.setAttribute('baseFrequency', `${bf.toFixed(4)} ${(bf * 0.7).toFixed(4)}`);
+    }
+    warpRaf = requestAnimationFrame(animateWarp);
+  }
+  animateWarp();
+
+  logoLink.addEventListener('mouseenter', () => { warpTarget = 28; });
+  logoLink.addEventListener('mouseleave', () => { warpTarget = 0; });
+
   // --- Click hint ---
+  // Measure each char position in DRV and align LAB chars under them
+  function alignTitle() {
+    const drv = document.getElementById('labelDrv');
+    const lab = document.getElementById('labelLab');
+    if (!drv || !lab) return;
+
+    const cs   = getComputedStyle(drv);
+    const font = cs.fontWeight + ' ' + cs.fontSize + ' ' + cs.fontFamily;
+    const cvs  = document.createElement('canvas');
+    const ctx  = cvs.getContext('2d');
+    ctx.font   = font;
+
+    // Measure position of D, R, V in DRV
+    const drvText = 'DRV';
+    let positions = [];
+    let acc = 0;
+    for (let i = 0; i < drvText.length; i++) {
+      positions.push(acc);
+      acc += ctx.measureText(drvText[i]).width + parseFloat(cs.letterSpacing);
+    }
+
+    // Measure L width in LAB (regular weight)
+    const cs2  = getComputedStyle(lab);
+    const font2 = cs2.fontWeight + ' ' + cs2.fontSize + ' ' + cs2.fontFamily;
+    ctx.font   = font2;
+    // offset = position of D = 0, so LAB starts at same x → no offset needed
+    // BUT bold D is wider than regular L — compute the difference
+    ctx.font = font; // bold
+    const wD = ctx.measureText('D').width;
+    ctx.font = font2; // regular
+    const wL = ctx.measureText('L').width;
+    // Center L under D: shift = (wD - wL) / 2
+    const shift = (wD - wL) / 2;
+    lab.style.paddingLeft = shift + 'px';
+  }
+
+  window.addEventListener('load', alignTitle);
+  window.addEventListener('resize', alignTitle);
   logoLink.addEventListener('click', e => {
     e.preventDefault();
     const hint = document.getElementById('hint');
