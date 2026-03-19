@@ -169,17 +169,17 @@
     z-index: 2;
     opacity: 0;
     filter: brightness(1.05) saturate(1.1);
-    transition: opacity 4s ease, filter 1.5s ease;
+    transition: opacity 12s ease, filter 1.5s ease;
   }
 
   .logo-img.visible {
     opacity: 1;
-    transition: opacity 4s ease, filter 1.5s ease;
+    transition: opacity 12s ease, filter 1.5s ease;
   }
 
   .logo-img.hiding {
     opacity: 0;
-    transition: opacity 4s ease, filter 2s ease;
+    transition: opacity 14s ease, filter 2s ease;
   }
 
   .logo-img.visible.distorting {
@@ -194,7 +194,7 @@
     border-radius: 50%;
     z-index: 3;
     pointer-events: none;
-    transition: opacity 4s ease;
+    transition: opacity 12s ease;
   }
 
   .radar-canvas.hidden {
@@ -445,7 +445,7 @@
       radarCanvas.classList.remove('hidden');
       warpTarget = 0;
       // clean up hiding class after transition
-      setTimeout(() => logoImg.classList.remove('hiding'), 4500);
+      setTimeout(() => logoImg.classList.remove('hiding'), 15000);
     }, 10000);
   }
 
