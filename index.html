@@ -79,35 +79,16 @@
     gap: 0;
   }
 
-  /* Label name — top */
+  /* Label name — image */
   .label-name {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start;
     margin-bottom: 3.5rem;
     opacity: 0;
     animation: fadeUp 1.2s ease 0.3s forwards;
-    line-height: 1;
-    gap: 0.3em;
   }
 
-  .label-drv {
-    font-family: 'Syncopate', sans-serif;
-    font-weight: 700;
-    font-size: clamp(14px, 2.2vw, 22px);
-    letter-spacing: 0.45em;
-    color: rgba(255,255,255,0.9);
-    text-transform: uppercase;
-    display: block;
-  }
-
-  .label-lab {
-    font-family: 'Syncopate', sans-serif;
-    font-weight: 400;
-    font-size: clamp(14px, 2.2vw, 22px);
-    letter-spacing: 0.45em;
-    color: rgba(255,255,255,0.4);
-    text-transform: uppercase;
+  .label-name img {
+    width: clamp(120px, 18vw, 200px);
+    filter: invert(1) brightness(0.85);
     display: block;
   }
 
@@ -294,8 +275,7 @@
 
 <div class="container">
   <div class="label-name">
-    <span class="label-drv" id="labelDrv">DRV</span>
-    <span class="label-lab" id="labelLab">LAB</span>
+    <img src="drv_scritta_sito.png" alt="DRV Lab">
   </div>
 
   <a class="logo-link" href="#" id="logoLink" title="Releases — coming soon">
