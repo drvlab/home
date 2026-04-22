@@ -390,7 +390,7 @@
   /* Carousel */
   .releases-carousel {
     display: flex;
-    align-items: center;
+    align-items: flex-start;
     gap: 2.4rem;
     position: relative;
     z-index: 1;
@@ -406,6 +406,8 @@
     padding: 0.4em 1.4em;
     transition: color 0.3s ease, opacity 0.3s ease;
     letter-spacing: 0;
+    margin-top: calc(clamp(160px, 28vmin, 280px) / 2);
+    transform: translateY(-50%);
   }
   .rel-arrow:hover { color: rgba(210,140,255,0.85); }
   .rel-arrow.hidden { opacity: 0; pointer-events: none; }
