@@ -76,16 +76,16 @@
     height: auto; display: block;
   }
 
-  .label-back {
-    font-family: 'Space Mono', monospace;
-    font-size: clamp(9px, 0.9vw, 11px);
-    letter-spacing: 0.28em; color: rgba(255,255,255,0.22);
-    text-transform: uppercase; background: none; border: none;
-    cursor: none; padding: 0;
-    transition: color 0.3s ease, opacity 0.7s ease;
-    opacity: 0; pointer-events: none; position: absolute;
+  .label-scritta.clickable {
+    cursor: none;
   }
-  .label-back:hover { color: rgba(180,80,255,0.7); }
+  .label-scritta.clickable img {
+    opacity: 0.6;
+    transition: opacity 0.3s ease;
+  }
+  .label-scritta.clickable:hover img {
+    opacity: 1;
+  }
 
   /* ── Logo circle ── */
   .logo-link {
@@ -151,7 +151,7 @@
   /* Cover images inside circle */
   .cover-wrap {
     position: absolute; inset: 0; z-index: 4;
-    border-radius: 50%; overflow: hidden;
+    border-radius: 0; overflow: hidden;
     opacity: 0; pointer-events: none;
     transition: opacity 0.8s ease;
   }
@@ -160,7 +160,6 @@
   }
   .cover-wrap img {
     width: 100%; height: 100%; object-fit: cover; display: block;
-    border-radius: 50%;
   }
 
   .logo-spin {
@@ -260,10 +259,9 @@
 
   <!-- Top label -->
   <div class="label-area">
-    <div class="label-scritta" id="labelScritta">
+    <div class="label-scritta" id="labelScritta" role="button">
       <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAE4AAAAqCAYAAAAdz21RAAAGC2lUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4KPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iWE1QIENvcmUgNS41LjAiPgogPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4KICA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIgogICAgeG1sbnM6eG1wPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvIgogICAgeG1sbnM6cGhvdG9zaG9wPSJodHRwOi8vbnMuYWRvYmUuY29tL3Bob3Rvc2hvcC8xLjAvIgogICAgeG1sbnM6ZGM9Imh0dHA6Ly9wdXJsLm9yZy9kYy9lbGVtZW50cy8xLjEvIgogICAgeG1sbnM6ZXhpZj0iaHR0cDovL25zLmFkb2JlLmNvbS9leGlmLzEuMC8iCiAgICB4bWxuczp0aWZmPSJodHRwOi8vbnMuYWRvYmUuY29tL3RpZmYvMS4wLyIKICAgIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIgogICAgeG1sbnM6c3RFdnQ9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9zVHlwZS9SZXNvdXJjZUV2ZW50IyIKICAgeG1wOkNyZWF0ZURhdGU9IjIwMjYtMDQtMjJUMTI6NTM6MjcrMDI6MDAiCiAgIHhtcDpNb2RpZnlEYXRlPSIyMDI2LTA0LTIyVDEyOjU0OjI3KzAyOjAwIgogICB4bXA6TWV0YWRhdGFEYXRlPSIyMDI2LTA0LTIyVDEyOjU0OjI3KzAyOjAwIgogICBwaG90b3Nob3A6RGF0ZUNyZWF0ZWQ9IjIwMjYtMDQtMjJUMTI6NTM6MjcrMDI6MDAiCiAgIHBob3Rvc2hvcDpDb2xvck1vZGU9IjMiCiAgIHBob3Rvc2hvcDpJQ0NQcm9maWxlPSJzUkdCIElFQzYxOTY2LTIu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" alt="DRV Lab">
     </div>
-    <button class="label-back" id="labelBack">&#8592; back</button>
   </div>
 
   <!-- Main circle -->
@@ -437,7 +435,7 @@
 
   // --- Releases mode ---
   const labelScritta = document.getElementById('labelScritta');
-  const labelBack    = document.getElementById('labelBack');
+
   const releaseInfo  = document.getElementById('releaseInfo');
   const relTitle     = document.getElementById('relTitle');
   const relPrev      = document.getElementById('relPrev');
@@ -454,8 +452,7 @@
     radarCanvas.style.transition='opacity 0.6s ease'; radarCanvas.style.opacity='0';
     warpTarget=0; logoImg.classList.remove('distorting');
     // Swap label
-    labelScritta.style.opacity='0'; labelScritta.style.pointerEvents='none';
-    setTimeout(()=>{ labelBack.style.opacity='1'; labelBack.style.pointerEvents='all'; },400);
+    labelScritta.classList.add('clickable');
     // Show first cover + info
     showRelease(0);
     releaseInfo.classList.add('visible');
@@ -468,8 +465,7 @@
     covers.forEach(c=>c.classList.remove('active'));
     releaseInfo.classList.remove('visible');
     // Swap label back
-    labelBack.style.opacity='0'; labelBack.style.pointerEvents='none';
-    setTimeout(()=>{ labelScritta.style.opacity='1'; labelScritta.style.pointerEvents='all'; },400);
+    labelScritta.classList.remove('clickable');
     // Restore radar
     radarCanvas.style.transition='opacity 1s ease'; radarCanvas.style.opacity='1';
     photoVisible=false; currentIdx=0;
@@ -491,7 +487,7 @@
     e.preventDefault();
     if(!inReleases) enterReleases();
   });
-  labelBack.addEventListener('click', exitReleases);
+  labelScritta.addEventListener('click', ()=>{ if(inReleases) exitReleases(); });
   relPrev.addEventListener('click', ()=>{ if(currentIdx>0) showRelease(currentIdx-1); });
   relNext.addEventListener('click', ()=>{ if(currentIdx<releases.length-1) showRelease(currentIdx+1); });
 </script>
