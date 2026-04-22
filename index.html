@@ -97,7 +97,7 @@
   }
 
   .label-name img {
-    width: clamp(60px, 8vw, 110px);
+    width: clamp(40px, 5vw, 72px);
     height: auto;
     display: block;
   }
@@ -229,6 +229,24 @@
 
   .logo-link:hover ~ .releases-hint {
     color: rgba(180,80,255,0.5);
+  }
+
+  /* Releases background radar */
+  .releases-radar {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+    z-index: 0;
+    opacity: 0.45;
+  }
+
+  .releases-back,
+  .releases-heading,
+  .releases-grid {
+    position: relative;
+    z-index: 1;
   }
 
   /* ===================== RELEASES PAGE ===================== */
@@ -478,6 +496,7 @@
 
 <!-- RELEASES PAGE -->
 <div class="releases-page" id="releasesPage">
+  <canvas class="releases-radar" id="releasesRadar"></canvas>
   <button class="releases-back" id="releasesBack">&#8592; back</button>
 
   <div class="releases-heading">Releases</div>
@@ -662,15 +681,96 @@
 
   hint.style.cursor = 'none';
 
-  hint.addEventListener('click', () => {
+  function goToReleases() {
     homePage.classList.add('hidden');
     releasesPage.classList.add('visible');
+  }
+
+  hint.addEventListener('click', goToReleases);
+
+  logoLink.addEventListener('click', e => {
+    e.preventDefault();
+    goToReleases();
   });
 
   releasesBack.addEventListener('click', () => {
     releasesPage.classList.remove('visible');
     homePage.classList.remove('hidden');
   });
+
+  // --- Releases page background radar ---
+  const releasesRadar = document.getElementById('releasesRadar');
+
+  function resizeReleasesRadar() {
+    const dpr = window.devicePixelRatio || 1;
+    releasesRadar.width  = window.innerWidth  * dpr;
+    releasesRadar.height = window.innerHeight * dpr;
+    releasesRadar.style.width  = window.innerWidth  + 'px';
+    releasesRadar.style.height = window.innerHeight + 'px';
+  }
+  resizeReleasesRadar();
+  window.addEventListener('resize', resizeReleasesRadar);
+
+  let relSweep = -Math.PI / 2;
+  let relLastTs = null;
+  const REL_PERIOD = 18000; // molto lento
+
+  function drawReleasesRadar(ts) {
+    if (!relLastTs) relLastTs = ts;
+    const dt = ts - relLastTs;
+    relLastTs = ts;
+
+    relSweep += (dt / REL_PERIOD) * Math.PI * 2;
+
+    const dpr = window.devicePixelRatio || 1;
+    const W = releasesRadar.width  / dpr;
+    const H = releasesRadar.height / dpr;
+    // centro leggermente spostato in basso a sinistra
+    const cx = W * 0.18, cy = H * 0.78;
+    const r  = Math.max(W, H) * 0.72;
+
+    const ctx = releasesRadar.getContext('2d');
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, W, H);
+
+    // Anelli concentrici statici — come traccia della posizione
+    for (let i = 1; i <= 4; i++) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, r * (i / 4), 0, Math.PI * 2);
+      ctx.strokeStyle = `rgba(160,80,255,${0.06 + i * 0.018})`;
+      ctx.lineWidth = 0.8;
+      ctx.stroke();
+    }
+
+    // Scia a gradini
+    const stepRad = (10 / 180) * Math.PI;
+    const steps = 8;
+    for (let i = steps; i >= 1; i--) {
+      const a1 = relSweep - i * stepRad;
+      const a2 = relSweep - (i - 1) * stepRad;
+      const alpha = (1 - i / (steps + 1)) * 0.09;
+      ctx.beginPath();
+      ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, r, a1, a2);
+      ctx.closePath();
+      ctx.fillStyle = `rgba(140,50,255,${alpha.toFixed(3)})`;
+      ctx.fill();
+    }
+
+    // Linea sweep
+    ctx.beginPath();
+    ctx.moveTo(cx, cy);
+    ctx.lineTo(cx + Math.cos(relSweep) * r, cy + Math.sin(relSweep) * r);
+    ctx.strokeStyle = 'rgba(200,120,255,0.35)';
+    ctx.lineWidth = 1;
+    ctx.shadowColor = 'rgba(180,80,255,0.5)';
+    ctx.shadowBlur = 8;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+
+    requestAnimationFrame(drawReleasesRadar);
+  }
+  requestAnimationFrame(drawReleasesRadar);
 
   // --- Logo pulse on radar rings ---
   const RING_DURATION = 3600;
